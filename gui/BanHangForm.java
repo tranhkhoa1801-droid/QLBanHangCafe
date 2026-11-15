@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
@@ -26,303 +27,336 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.table.DefaultTableModel;
 
-import controller.BusinessException;
 import controller.BanHangController;
+import controller.BusinessException;
 import controller.LoginController;
 import entity.ChiTietHoaDon;
 import entity.SanPham;
 
-/** Màn hình bán hàng, đặt vào JTabbedPane: tabs.addTab("Bán hàng", new BanHangForm()). */
 public class BanHangForm extends JPanel {
 
-    private final BanHangController ctrl = new BanHangController();
-    private final DecimalFormat money = new DecimalFormat("#,###");
+	private static final long serialVersionUID = 1L;
 
-    private final DefaultTableModel banModel = readOnlyModel("Bàn", "Trạng thái");
-    private final DefaultTableModel detailModel =
-            readOnlyModel("STT", "Mã SP", "Tên sản phẩm", "Đơn giá", "Số lượng", "Thành tiền");
-    private final JTable tblBan = new JTable(banModel);
-    private final JTable tblDetail = new JTable(detailModel);
-    private final JComboBox<SanPham> cboSanPham = new JComboBox<>();
-    private final JComboBox<String> cboPttt =
-            new JComboBox<>(BanHangController.PHUONG_THUC_THANH_TOAN.toArray(new String[0]));
-    private final JSpinner spnQty = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1));
-    private final JSpinner spnDiscount = new JSpinner(new SpinnerNumberModel(0, 0, 100, 5));
-    private final JLabel lblTotal = new JLabel();
-    private final JLabel lblDiscount = new JLabel();
-    private final JLabel lblFinal = new JLabel();
-    private final JButton btnAdd = new JButton("Thêm món");
-    private final JButton btnInc = new JButton("+");
-    private final JButton btnDec = new JButton("−");
-    private final JButton btnRemove = new JButton("Xóa món");
-    private final JButton btnCancel = new JButton("Hủy hóa đơn");
-    private final JButton btnPay = new JButton("Thanh toán");
+	private final BanHangController ctrl = new BanHangController();
+	private final DecimalFormat money = new DecimalFormat("#,###");
 
-    private List<String> banList = new ArrayList<>();
-    private Set<String> banCoKhach = new HashSet<>();
-    private List<ChiTietHoaDon> detailList = new ArrayList<>();
-    private String banChon;
-    private boolean dangNap;
+	private final DefaultTableModel banModel = createReadOnlyModel("Bàn", "Trạng thái");
+	private final DefaultTableModel detailModel = createReadOnlyModel("STT", "Mã SP", "Tên sản phẩm", "Đơn giá",
+			"Số lượng", "Thành tiền");
 
-    public BanHangForm() {
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        buildUi();
-        loadSanPham();
-        guard(this::loadBan);
-        guard(this::loadDetails);
-    }
+	private final JTable tblBan = new JTable(banModel);
+	private final JTable tblDetail = new JTable(detailModel);
+	private final JComboBox<SanPham> cboSanPham = new JComboBox<>();
+	private final JComboBox<String> cboPttt = new JComboBox<>(
+			BanHangController.PHUONG_THUC_THANH_TOAN.toArray(new String[0]));
 
-    // ------------------------------------------------------------ UI
-    private void buildUi() {
-        Font f = new Font("Tahoma", Font.PLAIN, 14);
-        tblBan.setFont(f);
-        tblDetail.setFont(f);
-        tblBan.setRowHeight(24);
-        tblDetail.setRowHeight(24);
-        tblBan.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tblDetail.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+	private final JSpinner spnQty = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1));
+	private final JSpinner spnDiscount = new JSpinner(new SpinnerNumberModel(0, 0, 100, 5));
 
-        JScrollPane left = new JScrollPane(tblBan);
-        left.setPreferredSize(new Dimension(240, 400));
-        left.setBorder(BorderFactory.createTitledBorder("Danh sách bàn"));
+	private final JLabel lblTotal = new JLabel();
+	private final JLabel lblDiscount = new JLabel();
+	private final JLabel lblFinal = new JLabel();
 
-        cboSanPham.setPreferredSize(new Dimension(280, 28));
-        cboSanPham.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                          boolean selected, boolean focus) {
-                super.getListCellRendererComponent(list, value, index, selected, focus);
-                setText(value instanceof SanPham sp
-                        ? sp.getTenSP() + " - " + money.format(sp.getGiaBan())
-                        : "---- Chọn sản phẩm ----");
-                return this;
-            }
-        });
+	private final JButton btnAdd = new JButton("Thêm món");
+	private final JButton btnInc = new JButton("+");
+	private final JButton btnDec = new JButton("-");
+	private final JButton btnRemove = new JButton("Xóa món");
+	private final JButton btnCancel = new JButton("Hủy hóa đơn");
+	private final JButton btnPay = new JButton("Thanh toán");
 
-        JPanel addPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        addPanel.add(cboSanPham);
-        addPanel.add(new JLabel("SL:"));
-        addPanel.add(spnQty);
-        addPanel.add(btnAdd);
+	private List<String> banList = new ArrayList<>();
+	private Set<String> banCoKhach = new HashSet<>();
+	private List<ChiTietHoaDon> detailList = new ArrayList<>();
+	private String banChon;
+	private boolean dangNap;
 
-        JPanel itemBtns = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        itemBtns.add(new JLabel("Món đang chọn:"));
-        itemBtns.add(btnDec);
-        itemBtns.add(btnInc);
-        itemBtns.add(btnRemove);
-        itemBtns.add(btnCancel);
+	public BanHangForm() {
+		setLayout(new BorderLayout(8, 8));
+		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		initUI();
+		loadSanPham();
+		runSafe(this::loadBan);
+		runSafe(this::loadDetails);
+	}
 
-        JPanel payRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        payRow.add(new JLabel("Giảm giá (%):"));
-        payRow.add(spnDiscount);
-        payRow.add(new JLabel("Thanh toán bằng:"));
-        payRow.add(cboPttt);
+	private void initUI() {
+		Font fontThuong = new Font("Tahoma", Font.PLAIN, 14);
+		tblBan.setFont(fontThuong);
+		tblDetail.setFont(fontThuong);
+		tblBan.setRowHeight(24);
+		tblDetail.setRowHeight(24);
+		tblBan.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		tblDetail.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        lblFinal.setFont(new Font("Tahoma", Font.BOLD, 18));
-        btnPay.setFont(new Font("Tahoma", Font.BOLD, 16));
-        JPanel summary = new JPanel(new GridLayout(0, 1));
-        summary.add(itemBtns);
-        summary.add(payRow);
-        summary.add(lblTotal);
-        summary.add(lblDiscount);
-        summary.add(lblFinal);
-        summary.add(btnPay);
+		JScrollPane leftScroll = new JScrollPane(tblBan);
+		leftScroll.setPreferredSize(new Dimension(240, 400));
+		leftScroll.setBorder(BorderFactory.createTitledBorder("Danh sách bàn"));
 
-        JScrollPane detailScroll = new JScrollPane(tblDetail);
-        detailScroll.setBorder(BorderFactory.createTitledBorder("Hóa đơn của bàn"));
-        JPanel center = new JPanel(new BorderLayout());
-        center.add(addPanel, BorderLayout.NORTH);
-        center.add(detailScroll, BorderLayout.CENTER);
-        center.add(summary, BorderLayout.SOUTH);
+		cboSanPham.setPreferredSize(new Dimension(280, 28));
+		cboSanPham.setRenderer(new DefaultListCellRenderer() {
+			private static final long serialVersionUID = 1L;
 
-        add(left, BorderLayout.WEST);
-        add(center, BorderLayout.CENTER);
+			@Override
+			public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
+					boolean cellHasFocus) {
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				if (value instanceof SanPham) {
+					SanPham sp = (SanPham) value;
+					setText(sp.getTenSP() + " - " + money.format(sp.getGiaBan()));
+				} else {
+					setText("---- Chọn sản phẩm ----");
+				}
+				return this;
+			}
+		});
 
-        tblBan.getSelectionModel().addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting() || dangNap) {
-                return;
-            }
-            int row = tblBan.getSelectedRow();
-            if (row < 0 || row >= banList.size()) {
-                return;
-            }
-            banChon = banList.get(row);
-            guard(this::loadDetails);
-        });
-        tblDetail.getSelectionModel().addListSelectionListener(e -> updateButtons());
-        spnDiscount.addChangeListener(e -> updateTotals());
-        btnAdd.addActionListener(e -> onAdd());
-        btnInc.addActionListener(e -> onChange(1));
-        btnDec.addActionListener(e -> onChange(-1));
-        btnRemove.addActionListener(e -> onRemove());
-        btnCancel.addActionListener(e -> onCancel());
-        btnPay.addActionListener(e -> onPay());
-    }
+		JPanel pnlAdd = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		pnlAdd.add(cboSanPham);
+		pnlAdd.add(new JLabel("SL:"));
+		pnlAdd.add(spnQty);
+		pnlAdd.add(btnAdd);
 
-    private static DefaultTableModel readOnlyModel(String... cols) {
-        return new DefaultTableModel(cols, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-    }
+		JPanel pnlItemBtns = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		pnlItemBtns.add(new JLabel("Món đang chọn:"));
+		pnlItemBtns.add(btnDec);
+		pnlItemBtns.add(btnInc);
+		pnlItemBtns.add(btnRemove);
+		pnlItemBtns.add(btnCancel);
 
-    // ------------------------------------------------------------ Data
-    private void loadSanPham() {
-        cboSanPham.addItem(null);
-        guard(() -> {
-            for (SanPham sp : ctrl.loadSanPham()) {
-                cboSanPham.addItem(sp);
-            }
-        });
-    }
+		JPanel pnlPayRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		pnlPayRow.add(new JLabel("Giảm giá (%):"));
+		pnlPayRow.add(spnDiscount);
+		pnlPayRow.add(new JLabel("Thanh toán bằng:"));
+		pnlPayRow.add(cboPttt);
 
-    private void loadBan() {
-        dangNap = true;
-        try {
-            banList = ctrl.loadDanhSachBan();
-            banCoKhach = ctrl.loadBanDangCoKhach();
-            banModel.setRowCount(0);
-            int sel = -1;
-            for (int i = 0; i < banList.size(); i++) {
-                String ban = banList.get(i);
-                banModel.addRow(new Object[]{ban, banCoKhach.contains(ban) ? "Có khách" : "Trống"});
-                if (ban.equals(banChon)) {
-                    sel = i;
-                }
-            }
-            if (sel >= 0) {
-                tblBan.setRowSelectionInterval(sel, sel);
-            }
-        } finally {
-            dangNap = false;
-        }
-    }
+		lblFinal.setFont(new Font("Tahoma", Font.BOLD, 18));
+		btnPay.setFont(new Font("Tahoma", Font.BOLD, 16));
 
-    private void loadDetails() {
-        detailList = banChon == null ? new ArrayList<ChiTietHoaDon>() : ctrl.loadChiTietTheoBan(banChon);
-        detailModel.setRowCount(0);
-        for (int i = 0; i < detailList.size(); i++) {
-            ChiTietHoaDon d = detailList.get(i);
-            detailModel.addRow(new Object[]{i + 1, d.getMaSP(), d.getTenSP(),
-                money.format(d.getGiaBanHienTai()), d.getSoLuong(), money.format(d.getThanhTien())});
-        }
-        updateTotals();
-        updateButtons();
-    }
+		JPanel pnlSummary = new JPanel(new GridLayout(0, 1));
+		pnlSummary.add(pnlItemBtns);
+		pnlSummary.add(pnlPayRow);
+		pnlSummary.add(lblTotal);
+		pnlSummary.add(lblDiscount);
+		pnlSummary.add(lblFinal);
+		pnlSummary.add(btnPay);
 
-    private void updateTotals() {
-        double total = BanHangController.tinhTongTien(detailList);
-        double discount = BanHangController.tinhGiamGia(total, (Integer) spnDiscount.getValue());
-        lblTotal.setText("Tổng tiền: " + money.format(total));
-        lblDiscount.setText("Giảm giá: " + money.format(discount));
-        lblFinal.setText("THÀNH TIỀN: " + money.format(total - discount));
-    }
+		JScrollPane detailScroll = new JScrollPane(tblDetail);
+		detailScroll.setBorder(BorderFactory.createTitledBorder("Hóa đơn của bàn"));
 
-    private void updateButtons() {
-        boolean hasRow = tblDetail.getSelectedRow() >= 0;
-        btnAdd.setEnabled(banChon != null);
-        btnInc.setEnabled(hasRow);
-        btnDec.setEnabled(hasRow);
-        btnRemove.setEnabled(hasRow);
-        btnCancel.setEnabled(!detailList.isEmpty());
-        btnPay.setEnabled(!detailList.isEmpty());
-    }
+		JPanel pnlCenter = new JPanel(new BorderLayout());
+		pnlCenter.add(pnlAdd, BorderLayout.NORTH);
+		pnlCenter.add(detailScroll, BorderLayout.CENTER);
+		pnlCenter.add(pnlSummary, BorderLayout.SOUTH);
 
-    private void refresh() {
-        loadBan();
-        loadDetails();
-    }
+		add(leftScroll, BorderLayout.WEST);
+		add(pnlCenter, BorderLayout.CENTER);
 
-    // ------------------------------------------------------------ Actions
-    private String maNhanVienDangNhap() {
-        var user = LoginController.getCurrentUser();
-        if (user == null) {
-            throw new BusinessException("Chưa đăng nhập!");
-        }
-        return user.maNV();
-    }
+		tblBan.getSelectionModel().addListSelectionListener(e -> {
+			if (e.getValueIsAdjusting() || dangNap) {
+				return;
+			}
+			int row = tblBan.getSelectedRow();
+			if (row < 0 || row >= banList.size()) {
+				return;
+			}
+			banChon = banList.get(row);
+			runSafe(this::loadDetails);
+		});
 
-    private void onAdd() {
-        SanPham sp = (SanPham) cboSanPham.getSelectedItem();
-        guard(() -> {
-            ctrl.themMon(banChon, maNhanVienDangNhap(), sp, (Integer) spnQty.getValue());
-            cboSanPham.setSelectedIndex(0);
-            spnQty.setValue(1);
-            refresh();
-        });
-    }
+		tblDetail.getSelectionModel().addListSelectionListener(e -> updateButtons());
+		spnDiscount.addChangeListener(e -> updateTotals());
+		btnAdd.addActionListener(e -> onAdd());
+		btnInc.addActionListener(e -> onChangeQuantity(1));
+		btnDec.addActionListener(e -> onChangeQuantity(-1));
+		btnRemove.addActionListener(e -> onRemove());
+		btnCancel.addActionListener(e -> onCancel());
+		btnPay.addActionListener(e -> onPay());
+	}
 
-    private ChiTietHoaDon selectedDetail() {
-        int row = tblDetail.getSelectedRow();
-        return (row < 0 || row >= detailList.size()) ? null : detailList.get(row);
-    }
+	private static DefaultTableModel createReadOnlyModel(String... cols) {
+		return new DefaultTableModel(cols, 0) {
+			private static final long serialVersionUID = 1L;
 
-    private void onChange(int delta) {
-        ChiTietHoaDon d = selectedDetail();
-        if (d == null) {
-            return;
-        }
-        int newQty = d.getSoLuong() + delta;
-        if (newQty <= 0) {
-            onRemove();
-            return;
-        }
-        guard(() -> {
-            ctrl.capNhatSoLuong(banChon, d.getMaSP(), newQty);
-            loadDetails();
-        });
-    }
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return false;
+			}
+		};
+	}
 
-    private void onRemove() {
-        ChiTietHoaDon d = selectedDetail();
-        if (d == null) {
-            return;
-        }
-        if (JOptionPane.showConfirmDialog(this, "Xóa món \"" + d.getTenSP() + "\" khỏi hóa đơn?",
-                "Xác nhận", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
-            return;
-        }
-        guard(() -> {
-            ctrl.xoaMon(banChon, d.getMaSP());
-            refresh();
-        });
-    }
+	private void loadSanPham() {
+		cboSanPham.addItem(null);
+		runSafe(() -> {
+			for (SanPham sp : ctrl.loadSanPham()) {
+				cboSanPham.addItem(sp);
+			}
+		});
+	}
 
-    private void onCancel() {
-        if (JOptionPane.showConfirmDialog(this, "Hủy toàn bộ hóa đơn của " + banChon + "?",
-                "Xác nhận", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
-            return;
-        }
-        guard(() -> {
-            ctrl.huyHoaDonBan(banChon);
-            refresh();
-        });
-    }
+	private void loadBan() {
+		dangNap = true;
+		try {
+			banList = ctrl.loadDanhSachBan();
+			banCoKhach = ctrl.loadBanDangCoKhach();
+			banModel.setRowCount(0);
+			int selectedIndex = -1;
 
-    private void onPay() {
-        int pct = (Integer) spnDiscount.getValue();
-        double total = BanHangController.tinhTongTien(detailList);
-        double finalPrice = total - BanHangController.tinhGiamGia(total, pct);
-        if (JOptionPane.showConfirmDialog(this, "Xác nhận thanh toán " + money.format(finalPrice) + " ?",
-                "Thanh toán", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
-            return;
-        }
-        guard(() -> {
-            String maHD = ctrl.thanhToan(banChon, pct, (String) cboPttt.getSelectedItem());
-            spnDiscount.setValue(0);
-            refresh();
-            new HoaDonForm(maHD).setVisible(true);
-        });
-    }
+			for (int i = 0; i < banList.size(); i++) {
+				String ban = banList.get(i);
+				String trangThai = banCoKhach.contains(ban) ? "Có khách" : "Trống";
+				banModel.addRow(new Object[] { ban, trangThai });
+				if (ban.equals(banChon)) {
+					selectedIndex = i;
+				}
+			}
 
-    private void guard(Runnable r) {
-        try {
-            r.run();
-        } catch (BusinessException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Thông báo", JOptionPane.WARNING_MESSAGE);
-        }
-    }
+			if (selectedIndex >= 0) {
+				tblBan.setRowSelectionInterval(selectedIndex, selectedIndex);
+			}
+		} finally {
+			dangNap = false;
+		}
+	}
+
+	private void loadDetails() {
+		if (banChon == null) {
+			detailList = new ArrayList<>();
+		} else {
+			detailList = ctrl.loadChiTietTheoBan(banChon);
+		}
+
+		detailModel.setRowCount(0);
+		for (int i = 0; i < detailList.size(); i++) {
+			ChiTietHoaDon d = detailList.get(i);
+			detailModel.addRow(new Object[] {
+					i + 1,
+					d.getMaSP(),
+					d.getTenSP(),
+					money.format(d.getGiaBanHienTai()),
+					d.getSoLuong(),
+					money.format(d.getThanhTien())
+			});
+		}
+		updateTotals();
+		updateButtons();
+	}
+
+	private void updateTotals() {
+		double total = BanHangController.tinhTongTien(detailList);
+		double discount = BanHangController.tinhGiamGia(total, (Integer) spnDiscount.getValue());
+		lblTotal.setText("Tổng tiền: " + money.format(total));
+		lblDiscount.setText("Giảm giá: " + money.format(discount));
+		lblFinal.setText("THÀNH TIỀN: " + money.format(total - discount));
+	}
+
+	private void updateButtons() {
+		boolean hasRow = tblDetail.getSelectedRow() >= 0;
+		btnAdd.setEnabled(banChon != null);
+		btnInc.setEnabled(hasRow);
+		btnDec.setEnabled(hasRow);
+		btnRemove.setEnabled(hasRow);
+		btnCancel.setEnabled(!detailList.isEmpty());
+		btnPay.setEnabled(!detailList.isEmpty());
+	}
+
+	private void refresh() {
+		loadBan();
+		loadDetails();
+	}
+
+	private String getMaNhanVienDangNhap() {
+		var user = LoginController.getCurrentUser();
+		if (user == null) {
+			throw new BusinessException("Chưa đăng nhập!");
+		}
+		return user.maNV();
+	}
+
+	private void onAdd() {
+		SanPham sp = (SanPham) cboSanPham.getSelectedItem();
+		runSafe(() -> {
+			ctrl.themMon(banChon, getMaNhanVienDangNhap(), sp, (Integer) spnQty.getValue());
+			cboSanPham.setSelectedIndex(0);
+			spnQty.setValue(1);
+			refresh();
+		});
+	}
+
+	private ChiTietHoaDon getSelectedDetail() {
+		int row = tblDetail.getSelectedRow();
+		if (row < 0 || row >= detailList.size()) {
+			return null;
+		}
+		return detailList.get(row);
+	}
+
+	private void onChangeQuantity(int delta) {
+		ChiTietHoaDon d = getSelectedDetail();
+		if (d == null) {
+			return;
+		}
+		int newQty = d.getSoLuong() + delta;
+		if (newQty <= 0) {
+			onRemove();
+			return;
+		}
+		runSafe(() -> {
+			ctrl.capNhatSoLuong(banChon, d.getMaSP(), newQty);
+			loadDetails();
+		});
+	}
+
+	private void onRemove() {
+		ChiTietHoaDon d = getSelectedDetail();
+		if (d == null) {
+			return;
+		}
+		int confirm = JOptionPane.showConfirmDialog(this, "Xóa món \"" + d.getTenSP() + "\" khỏi hóa đơn?",
+				"Xác nhận", JOptionPane.YES_NO_OPTION);
+		if (confirm != JOptionPane.YES_OPTION) {
+			return;
+		}
+		runSafe(() -> {
+			ctrl.xoaMon(banChon, d.getMaSP());
+			refresh();
+		});
+	}
+
+	private void onCancel() {
+		int confirm = JOptionPane.showConfirmDialog(this, "Hủy toàn bộ hóa đơn của " + banChon + "?",
+				"Xác nhận", JOptionPane.YES_NO_OPTION);
+		if (confirm != JOptionPane.YES_OPTION) {
+			return;
+		}
+		runSafe(() -> {
+			ctrl.huyHoaDonBan(banChon);
+			refresh();
+		});
+	}
+
+	private void onPay() {
+		int pct = (Integer) spnDiscount.getValue();
+		double total = BanHangController.tinhTongTien(detailList);
+		double finalPrice = total - BanHangController.tinhGiamGia(total, pct);
+
+		int confirm = JOptionPane.showConfirmDialog(this, "Xác nhận thanh toán " + money.format(finalPrice) + " ?",
+				"Thanh toán", JOptionPane.YES_NO_OPTION);
+		if (confirm != JOptionPane.YES_OPTION) {
+			return;
+		}
+		runSafe(() -> {
+			String maHD = ctrl.thanhToan(banChon, pct, (String) cboPttt.getSelectedItem());
+			spnDiscount.setValue(0);
+			refresh();
+			new HoaDonForm(maHD).setVisible(true);
+		});
+	}
+
+	private void runSafe(Runnable action) {
+		try {
+			action.run();
+		} catch (BusinessException ex) {
+			JOptionPane.showMessageDialog(this, ex.getMessage(), "Thông báo", JOptionPane.WARNING_MESSAGE);
+		}
+	}
 }
