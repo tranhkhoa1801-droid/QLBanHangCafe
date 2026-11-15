@@ -1,6 +1,5 @@
 package dao;
 
-import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,107 +9,123 @@ import java.util.Set;
 
 import entity.HoaDon;
 
-/** Truy cập bảng HoaDon. Mọi method nhận Connection để Tx điều khiển transaction. */
 public class HoaDonDAO {
 
-    public static final String DANG_MO = "Chưa thanh toán";
+	public static final String DANG_MO = "Chưa thanh toán";
+	public static final String DA_THANH_TOAN = "Đã thanh toán";
+	public static final String DA_HUY = "Đã hủy";
 
-    private static HoaDonDAO instance;
+	private static HoaDonDAO instance;
 
-    public static synchronized HoaDonDAO getInstance() {
-        if (instance == null) {
-            instance = new HoaDonDAO();
-        }
-        return instance;
-    }
+	public static synchronized HoaDonDAO getInstance() {
+		if (instance == null) {
+			instance = new HoaDonDAO();
+		}
+		return instance;
+	}
 
-    /** Mã hóa đơn đang mở của bàn, null nếu bàn đang trống. */
-    public String findOpenInvoiceId(Connection con, String ban) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement(
-                "SELECT TOP 1 maHD FROM HoaDon WHERE ban = ? AND trangThai = N'Chưa thanh toán' ORDER BY thoiGianTao DESC")) {
-            ps.setString(1, ban);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getString(1) : null;
-            }
-        }
-    }
+	public String findOpenInvoiceId(Connection con, String ban) throws SQLException {
+		String sql = "SELECT TOP 1 maHD FROM HoaDon WHERE ban = ? AND trangThai = ? ORDER BY thoiGianTao DESC";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, ban);
+			ps.setString(2, DANG_MO);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					return rs.getString("maHD");
+				}
+			}
+		}
+		return null;
+	}
 
-    /** Tên các bàn đang có hóa đơn mở (để hiển thị "Có khách"). */
-    public Set<String> findOpenTables(Connection con) throws SQLException {
-        Set<String> set = new HashSet<>();
-        try (PreparedStatement ps = con.prepareStatement(
-                "SELECT ban FROM HoaDon WHERE trangThai = N'Chưa thanh toán'");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                set.add(rs.getString(1));
-            }
-        }
-        return set;
-    }
+	public Set<String> findOpenTables(Connection con) throws SQLException {
+		Set<String> set = new HashSet<>();
+		String sql = "SELECT ban FROM HoaDon WHERE trangThai = ?";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, DANG_MO);
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					set.add(rs.getString("ban"));
+				}
+			}
+		}
+		return set;
+	}
 
-    /** Sinh mã HD001, HD002... Phải gọi trong transaction; UPDLOCK + HOLDLOCK chống 2 máy sinh trùng. */
-    public String taoMaHoaDonMoi(Connection con) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement(
-                "SELECT ISNULL(MAX(TRY_CAST(SUBSTRING(maHD, 3, 18) AS INT)), 0) + 1 "
-                + "FROM HoaDon WITH (UPDLOCK, HOLDLOCK) WHERE maHD LIKE 'HD%'");
-             ResultSet rs = ps.executeQuery()) {
-            rs.next();
-            return String.format("HD%03d", rs.getInt(1));
-        }
-    }
+	public String taoMaHoaDonMoi(Connection con) throws SQLException {
+		String sql = "SELECT ISNULL(MAX(TRY_CAST(SUBSTRING(maHD, 3, 18) AS INT)), 0) + 1 "
+				+ "FROM HoaDon WITH (UPDLOCK, HOLDLOCK) WHERE maHD LIKE 'HD%'";
+		try (PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+			if (rs.next()) {
+				return String.format("HD%03d", rs.getInt(1));
+			}
+		}
+		return "HD001";
+	}
 
-    /** Tạo hóa đơn mới ở trạng thái đang mở. */
-    public void insertOpen(Connection con, String maHD, String ban, String maNV) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO HoaDon(maHD, thoiGianTao, ban, maNV, trangThai, tongTien) "
-                + "VALUES (?, GETDATE(), ?, ?, N'Chưa thanh toán', 0)")) {
-            ps.setString(1, maHD);
-            ps.setString(2, ban);
-            ps.setString(3, maNV);
-            ps.executeUpdate();
-        }
-    }
+	public void insertOpen(Connection con, String maHD, String ban, String maNV) throws SQLException {
+		String sql = "INSERT INTO HoaDon(maHD, thoiGianTao, ban, maNV, trangThai, tongTien) "
+				+ "VALUES (?, GETDATE(), ?, ?, ?, 0)";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, maHD);
+			ps.setString(2, ban);
+			ps.setString(3, maNV);
+			ps.setString(4, DANG_MO);
+			ps.executeUpdate();
+		}
+	}
 
-    /** Thanh toán: stored procedure tự tính tổng từ chi tiết, áp giảm giá, đổi trạng thái. */
-    public void markPaid(Connection con, String maHD, int phanTramGiam, String pttt) throws SQLException {
-        try (CallableStatement cs = con.prepareCall("{call sp_ThanhToanHoaDon(?,?,?)}")) {
-            cs.setString(1, maHD);
-            cs.setInt(2, phanTramGiam);
-            cs.setString(3, pttt);
-            cs.execute();
-        }
-    }
+	public boolean markPaid(Connection con, String maHD, String phuongThucThanhToan, double tongTien)
+			throws SQLException {
+		String sql = "UPDATE HoaDon SET phuongThucThanhToan = ?, trangThai = ?, tongTien = ? "
+				+ "WHERE maHD = ? AND trangThai = ?";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, phuongThucThanhToan);
+			ps.setString(2, DA_THANH_TOAN);
+			ps.setDouble(3, tongTien);
+			ps.setString(4, maHD);
+			ps.setString(5, DANG_MO);
+			return ps.executeUpdate() > 0;
+		}
+	}
 
-    /** Hủy hóa đơn đang mở (giữ lịch sử, trạng thái 'Đã hủy'). */
-    public void cancel(Connection con, String maHD) throws SQLException {
-        try (CallableStatement cs = con.prepareCall("{call sp_HuyHoaDon(?)}")) {
-            cs.setString(1, maHD);
-            cs.execute();
-        }
-    }
+	public boolean cancel(Connection con, String maHD) throws SQLException {
+		String sql = "UPDATE HoaDon SET trangThai = ? WHERE maHD = ? AND trangThai = ?";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, DA_HUY);
+			ps.setString(2, maHD);
+			ps.setString(3, DANG_MO);
+			return ps.executeUpdate() > 0;
+		}
+	}
 
-    /** Xóa hóa đơn đang mở (dùng khi hết món); trigger tự xóa chi tiết còn sót. */
-    public void deleteOpen(Connection con, String maHD) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement(
-                "DELETE FROM HoaDon WHERE maHD = ? AND trangThai = N'Chưa thanh toán'")) {
-            ps.setString(1, maHD);
-            ps.executeUpdate();
-        }
-    }
+	public void deleteOpen(Connection con, String maHD) throws SQLException {
+		String sql = "DELETE FROM HoaDon WHERE maHD = ? AND trangThai = ?";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, maHD);
+			ps.setString(2, DANG_MO);
+			ps.executeUpdate();
+		}
+	}
 
-    public HoaDon getById(Connection con, String maHD) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement(
-                "SELECT maHD, thoiGianTao, ban, maNV, phuongThucThanhToan, trangThai, tongTien "
-                + "FROM HoaDon WHERE maHD = ?")) {
-            ps.setString(1, maHD);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
-                }
-                return new HoaDon(rs.getString("maHD"), rs.getTimestamp("thoiGianTao"), rs.getString("ban"),
-                        rs.getString("maNV"), rs.getString("phuongThucThanhToan"),
-                        rs.getString("trangThai"), rs.getDouble("tongTien"));
-            }
-        }
-    }
+	public HoaDon getById(Connection con, String maHD) throws SQLException {
+		String sql = "SELECT maHD, thoiGianTao, ban, maNV, phuongThucThanhToan, trangThai, tongTien "
+				+ "FROM HoaDon WHERE maHD = ?";
+		try (PreparedStatement ps = con.prepareStatement(sql)) {
+			ps.setString(1, maHD);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					return new HoaDon(
+							rs.getString("maHD"),
+							rs.getTimestamp("thoiGianTao"),
+							rs.getString("ban"),
+							rs.getString("maNV"),
+							rs.getString("phuongThucThanhToan"),
+							rs.getString("trangThai"),
+							rs.getDouble("tongTien"));
+				}
+			}
+		}
+		return null;
+	}
 }
