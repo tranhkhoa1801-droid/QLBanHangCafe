@@ -1,0 +1,11 @@
+# Compiled output
+/bin/
+/target/
+*.class
+
+# Log files
+*.log
+
+# Temp files
+*.tmp
+*.bak

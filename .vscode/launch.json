@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Chạy Coffee Management",
+            "request": "launch",
+            "mainClass": "gui.Coffee_GUI",
+            "projectName": "QLBanHangCafe"
+        },
+        {
+            "type": "java",
+            "name": "Chạy CoffeeManagement (Alias)",
+            "request": "launch",
+            "mainClass": "gui.CoffeeManagement",
+            "projectName": "QLBanHangCafe"
+        }
+    ]
+}
