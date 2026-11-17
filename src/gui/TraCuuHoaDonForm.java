@@ -174,6 +174,7 @@ public class TraCuuHoaDonForm extends JPanel {
         // gắn sự kiện
         nutTim.addActionListener(e -> traCuuHoaDon());
         nutDatLai.addActionListener(e -> datLaiBoLoc());
+        txtMaHoaDonCanTim.addActionListener(e -> traCuuHoaDon());
         bangHoaDon.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int dong = bangHoaDon.getSelectedRow();
@@ -216,6 +217,14 @@ public class TraCuuHoaDonForm extends JPanel {
         }
     }
 
+    private LocalDateTime chuyenDoiThoiGian(java.util.Date date) {
+        if (date == null) return null;
+        if (date instanceof java.sql.Timestamp) {
+            return ((java.sql.Timestamp) date).toLocalDateTime();
+        }
+        return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+    }
+
     public void capNhatDanhSachHoaDon(List<ChiTietHoaDonTraCuu> ketQuaTraCuu) {
         moHinhHoaDon.setRowCount(0);
         if (ketQuaTraCuu != null) {
@@ -225,7 +234,7 @@ public class TraCuuHoaDonForm extends JPanel {
                 String trangThai = hd.getTrangThai();
                 moHinhHoaDon.addRow(new Object[] {
                         hd.getMaHD(),
-                        hd.getThoiGianTao() == null ? null : hd.getThoiGianTao().toLocalDateTime(),
+                        hd.getThoiGianTao() == null ? null : chuyenDoiThoiGian(hd.getThoiGianTao()),
                         ten == null || ten.isBlank() ? "—" : ten,
                         hd.getTongTien(),
                         trangThai == null || trangThai.isBlank() ? "—" : trangThai
@@ -272,7 +281,7 @@ public class TraCuuHoaDonForm extends JPanel {
         String maHoaDon = hoaDon.getMaHD();
         lblMaHoaDon.setText(maHoaDon == null || maHoaDon.isBlank() ? "—" : maHoaDon);
         lblNgayLap.setText(hoaDon.getThoiGianTao() == null ? "—"
-                : DINH_DANG_THOI_GIAN_HOA_DON.format(hoaDon.getThoiGianTao().toLocalDateTime()));
+                : DINH_DANG_THOI_GIAN_HOA_DON.format(chuyenDoiThoiGian(hoaDon.getThoiGianTao())));
         String tenNhanVien = ketQua.nhanVien() == null ? null : ketQua.nhanVien().getHoTen();
         lblNhanVien.setText(tenNhanVien == null || tenNhanVien.isBlank() ? "—" : tenNhanVien);
         String trangThai = hoaDon.getTrangThai();

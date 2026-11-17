@@ -1,6 +1,9 @@
 package entity;
 
+import java.util.List;
 import java.util.Objects;
+import dao.DanhMucDAO;
+import dao.SanPhamDAO;
 
 public class DanhMuc {
     private String maDM;
@@ -16,6 +19,31 @@ public class DanhMuc {
     public DanhMuc(String maDM, String tenDM) {
         this.maDM = maDM;
         this.tenDM = tenDM;
+    }
+
+    // Class diagram methods
+    public boolean save() {
+        DanhMucDAO dao = new DanhMucDAO();
+        if (dao.getById(maDM) != null) {
+            return dao.update(this);
+        } else {
+            return dao.insert(this);
+        }
+    }
+
+    public List<DanhMuc> getAll() {
+        return new DanhMucDAO().getAll();
+    }
+
+    public int getQuantity() {
+        int count = 0;
+        List<SanPham> list = new SanPhamDAO().getAll();
+        for (SanPham sp : list) {
+            if (sp.getDanhMuc() != null && maDM != null && maDM.equals(sp.getDanhMuc().getMaDM())) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public String getMaDM() {

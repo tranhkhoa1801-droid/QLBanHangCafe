@@ -253,6 +253,10 @@ public class ThongKeForm extends JPanel {
             coDiemTruoc = true;
         }
 
+        if (yHienTai == -1) {
+            yHienTai = duoi;
+        }
+
         g.setColor(Color.GRAY);
         g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new float[] {5f, 5f}, 0f));
         g.drawLine(xHienTai, tren, xHienTai, duoi);

@@ -126,6 +126,7 @@ public class NhanVienForm extends JPanel {
         btnKhoa.addActionListener(e -> khoaNhanVien());
         btnLamMoi.addActionListener(e -> lamMoi());
         btnTim.addActionListener(e -> timKiem());
+        txtTimKiem.addActionListener(e -> timKiem());
 
         tblNhanVien.addMouseListener(new MouseAdapter() {
             @Override
@@ -159,7 +160,7 @@ public class NhanVienForm extends JPanel {
                     nv.getMaNV(),
                     nv.getHoTen(),
                     nv.getVaiTro(),
-                    nv.getsDT(),
+                    nv.getSdt(),
                     nv.getTaiKhoan() != null ? nv.getTaiKhoan().getTenDangNhap() : "",
                     nv.getCaLamViec(),
                     nv.isActive() ? "Đang làm việc" : "Đã nghỉ việc / Khóa"
@@ -176,7 +177,7 @@ public class NhanVienForm extends JPanel {
                     nv.getMaNV(),
                     nv.getHoTen(),
                     nv.getVaiTro(),
-                    nv.getsDT(),
+                    nv.getSdt(),
                     nv.getTaiKhoan() != null ? nv.getTaiKhoan().getTenDangNhap() : "",
                     nv.getCaLamViec(),
                     nv.isActive() ? "Đang làm việc" : "Đã nghỉ việc / Khóa"

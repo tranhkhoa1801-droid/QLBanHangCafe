@@ -5,68 +5,42 @@ import java.sql.SQLException;
 
 import connectDB.ConnectDB;
 
+/** Chạy một nhóm thao tác DAO trên cùng một Connection và transaction. */
 public final class Tx {
-
     @FunctionalInterface
-    public interface Work<T> {
-        T run(Connection con) throws SQLException;
-    }
+    public interface Work<T> { T run(Connection con) throws SQLException; }
 
-    private Tx() {
-    }
-
-    private static Connection open() throws SQLException {
-        Connection con = ConnectDB.getConnection();
-        if (con == null || con.isClosed()) {
-            ConnectDB.getInstance().connect();
-            con = ConnectDB.getConnection();
-        }
-        if (con == null) {
-            throw new BusinessException("Không thể kết nối đến cơ sở dữ liệu!");
-        }
-        return con;
-    }
+    private Tx() { }
 
     public static <T> T read(Work<T> work) {
-        try {
-            Connection con = open();
+        try (Connection con = ConnectDB.getConnection()) {
             return work.run(con);
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new BusinessException(ex.getMessage(), ex);
+            throw new BusinessException("Lỗi truy xuất dữ liệu: " + ex.getMessage(), ex);
         }
     }
 
     public static <T> T write(Work<T> work) {
-        Connection con = null;
-        boolean oldAuto = true;
-        try {
-            con = open();
-            oldAuto = con.getAutoCommit();
+        try (Connection con = ConnectDB.getConnection()) {
+            boolean oldAutoCommit = con.getAutoCommit();
             con.setAutoCommit(false);
-
-            T result = work.run(con);
-            con.commit();
-            return result;
+            try {
+                T result = work.run(con);
+                con.commit();
+                return result;
+            } catch (Exception ex) {
+                try { con.rollback(); } catch (SQLException rollbackError) { ex.addSuppressed(rollbackError); }
+                if (ex instanceof BusinessException businessException) throw businessException;
+                throw new BusinessException("Giao dịch thất bại: " + ex.getMessage(), ex);
+            } finally {
+                try { con.setAutoCommit(oldAutoCommit); } catch (SQLException ignored) { }
+            }
+        } catch (BusinessException ex) {
+            throw ex;
         } catch (Exception ex) {
-            if (con != null) {
-                try {
-                    con.rollback();
-                } catch (SQLException ignored) {
-                }
-            }
-            if (ex instanceof BusinessException) {
-                throw (BusinessException) ex;
-            }
-            throw new BusinessException(ex.getMessage(), ex);
-        } finally {
-            if (con != null) {
-                try {
-                    con.setAutoCommit(oldAuto);
-                } catch (SQLException ignored) {
-                }
-            }
+            throw new BusinessException("Không thể thực hiện giao dịch: " + ex.getMessage(), ex);
         }
     }
 }

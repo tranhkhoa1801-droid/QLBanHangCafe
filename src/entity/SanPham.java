@@ -24,12 +24,17 @@ public class SanPham {
         this.danhMuc = danhMuc;
     }
 
+    // Class diagram methods
     public double tinhLoiNhuan() {
         return giaBan - giaVon;
     }
 
-    public double getTiLeLoiNhuan() {
+    public double getTileLoiNhuan() {
         return giaVon > 0 ? (giaBan - giaVon) / giaVon : 0;
+    }
+
+    public double getTiLeLoiNhuan() {
+        return getTileLoiNhuan();
     }
 
     public String getMaSP() {

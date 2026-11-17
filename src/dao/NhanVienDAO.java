@@ -35,7 +35,7 @@ public class NhanVienDAO {
 
     public List<NhanVien> getAll() {
         List<NhanVien> list = new ArrayList<>();
-        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap, tk.matKhau "
+        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap "
                    + "FROM NhanVien nv LEFT JOIN TaiKhoan tk ON nv.maTK = tk.maTK ORDER BY nv.maNV";
         try (Connection con = ConnectDB.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
@@ -50,7 +50,7 @@ public class NhanVienDAO {
     }
 
     public NhanVien getById(String maNV) {
-        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap, tk.matKhau "
+        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap "
                    + "FROM NhanVien nv LEFT JOIN TaiKhoan tk ON nv.maTK = tk.maTK WHERE nv.maNV = ?";
         try (Connection con = ConnectDB.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -67,7 +67,7 @@ public class NhanVienDAO {
     }
 
     public NhanVien findByUsername(String user) {
-        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap, tk.matKhau "
+        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap "
                    + "FROM NhanVien nv JOIN TaiKhoan tk ON nv.maTK = tk.maTK WHERE tk.tenDangNhap = ?";
         try (Connection con = ConnectDB.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -85,7 +85,7 @@ public class NhanVienDAO {
 
     public List<NhanVien> search(String kw) {
         List<NhanVien> list = new ArrayList<>();
-        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap, tk.matKhau "
+        String sql = "SELECT nv.maNV, nv.hoTen, nv.vaiTro, nv.sdt, nv.maTK, nv.caLamViec, nv.isActive, tk.tenDangNhap "
                    + "FROM NhanVien nv LEFT JOIN TaiKhoan tk ON nv.maTK = tk.maTK "
                    + "WHERE nv.maNV LIKE ? OR nv.hoTen LIKE ? OR tk.tenDangNhap LIKE ? OR nv.sdt LIKE ? ORDER BY nv.maNV";
         String pattern = "%" + (kw != null ? kw.trim() : "") + "%";
@@ -106,6 +106,20 @@ public class NhanVienDAO {
         return list;
     }
 
+    public boolean insert(Connection con, NhanVien nv) throws SQLException {
+        String sql = "INSERT INTO NhanVien (maNV, hoTen, vaiTro, sdt, maTK, caLamViec, isActive) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, nv.getMaNV());
+            ps.setString(2, nv.getHoTen());
+            ps.setString(3, nv.getVaiTro());
+            ps.setString(4, nv.getSdt());
+            ps.setString(5, nv.getMaTK());
+            ps.setString(6, nv.getCaLamViec());
+            ps.setBoolean(7, nv.isActive());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public boolean insert(NhanVien nv) {
         String sql = "INSERT INTO NhanVien (maNV, hoTen, vaiTro, sdt, maTK, caLamViec, isActive) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = ConnectDB.getConnection();
@@ -113,7 +127,7 @@ public class NhanVienDAO {
             ps.setString(1, nv.getMaNV());
             ps.setString(2, nv.getHoTen());
             ps.setString(3, nv.getVaiTro());
-            ps.setString(4, nv.getsDT());
+            ps.setString(4, nv.getSdt());
             ps.setString(5, nv.getMaTK());
             ps.setString(6, nv.getCaLamViec());
             ps.setBoolean(7, nv.isActive());
@@ -124,13 +138,27 @@ public class NhanVienDAO {
         }
     }
 
+    public boolean update(Connection con, NhanVien nv) throws SQLException {
+        String sql = "UPDATE NhanVien SET hoTen = ?, vaiTro = ?, sdt = ?, maTK = ?, caLamViec = ?, isActive = ? WHERE maNV = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, nv.getHoTen());
+            ps.setString(2, nv.getVaiTro());
+            ps.setString(3, nv.getSdt());
+            ps.setString(4, nv.getMaTK());
+            ps.setString(5, nv.getCaLamViec());
+            ps.setBoolean(6, nv.isActive());
+            ps.setString(7, nv.getMaNV());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public boolean update(NhanVien nv) {
         String sql = "UPDATE NhanVien SET hoTen = ?, vaiTro = ?, sdt = ?, maTK = ?, caLamViec = ?, isActive = ? WHERE maNV = ?";
         try (Connection con = ConnectDB.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, nv.getHoTen());
             ps.setString(2, nv.getVaiTro());
-            ps.setString(3, nv.getsDT());
+            ps.setString(3, nv.getSdt());
             ps.setString(4, nv.getMaTK());
             ps.setString(5, nv.getCaLamViec());
             ps.setBoolean(6, nv.isActive());
@@ -139,6 +167,14 @@ public class NhanVienDAO {
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public boolean delete(Connection con, String maNV) throws SQLException {
+        String sql = "DELETE FROM NhanVien WHERE maNV = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -164,6 +200,14 @@ public class NhanVienDAO {
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public boolean hasInvoices(Connection con, String maNV) throws SQLException {
+        String sql = "SELECT TOP 1 1 FROM HoaDon WHERE maNV = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maNV);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
         }
     }
 

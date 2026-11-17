@@ -10,7 +10,7 @@ public class ConnectDB {
 
     private static String url = "jdbc:sqlserver://localhost:1433;databaseName=QLQuanCaPhe;trustServerCertificate=true";
     private static String user = "sa";
-    private static String password = "Huy16052006@";
+    private static String password = "sapassword";
 
     private ConnectDB() {
     }

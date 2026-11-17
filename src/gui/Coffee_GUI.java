@@ -98,7 +98,7 @@ public class Coffee_GUI extends JFrame {
 
         JButton btnDangNhap = new JButton("ĐĂNG NHẬP");
         btnDangNhap.setBackground(new Color(110, 60, 20));
-        btnDangNhap.setForeground(Color.BLACK);
+        btnDangNhap.setForeground(Color.WHITE);
         btnDangNhap.setFont(new Font("Arial", Font.BOLD, 14));
 
         form.add(lblTitle);
@@ -108,6 +108,7 @@ public class Coffee_GUI extends JFrame {
         form.add(btnDangNhap);
 
         btnDangNhap.addActionListener(e -> dangNhap());
+        txtDangNhap.addActionListener(e -> dangNhap());
         txtMatKhau.addActionListener(e -> dangNhap());
 
         main.add(form);
@@ -321,6 +322,7 @@ public class Coffee_GUI extends JFrame {
             tblDanhMuc.clearSelection();
         }
         loadDanhMuc();
+        capNhatComboDanhMuc();
     }
 
     // Giao diện quản lý Sản Phẩm
@@ -393,6 +395,7 @@ public class Coffee_GUI extends JFrame {
         btnXoa.addActionListener(e -> xoaSanPham());
         btnLamMoi.addActionListener(e -> lamMoiSanPham());
         btnTim.addActionListener(e -> timKiemSanPham());
+        txtTimKiem.addActionListener(e -> timKiemSanPham());
 
         tblSanPham.addMouseListener(new MouseAdapter() {
             @Override

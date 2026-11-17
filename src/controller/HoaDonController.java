@@ -45,7 +45,8 @@ public class HoaDonController {
         sb.append(line);
         sb.append(String.format("Mã hóa đơn : %s%n", hd.getMaHD()));
         sb.append(String.format("Bàn        : %s%n", hd.getBan()));
-        sb.append(String.format("Mã NV      : %s%n", hd.getMaNV()));
+        String maNV = (hd.getMaNV() != null) ? hd.getMaNV().getMaNV() : "";
+        sb.append(String.format("Mã NV      : %s%n", maNV));
         sb.append(String.format("Thanh toán : %s (%s)%n", pttt, hd.getTrangThai()));
 
         if (hd.getThoiGianTao() != null) {

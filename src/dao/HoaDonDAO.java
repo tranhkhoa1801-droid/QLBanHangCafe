@@ -193,4 +193,9 @@ public class HoaDonDAO {
         }
         return list;
     }
+
+    public boolean save(HoaDon hd) {
+        if (hd == null) return false;
+        return hd.save();
+    }
 }

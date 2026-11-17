@@ -1,6 +1,8 @@
 package entity;
 
 import java.util.Objects;
+import dao.NhanVienDAO;
+import dao.TaiKhoanDAO;
 
 public class TaiKhoan {
     private String maTK;
@@ -18,6 +20,35 @@ public class TaiKhoan {
         this.maTK = maTK;
         this.tenDangNhap = tenDangNhap;
         this.matKhau = matKhau;
+    }
+
+    // Class diagram methods
+    public NhanVien authenticate() {
+        TaiKhoanDAO dao = new TaiKhoanDAO();
+        TaiKhoan tk = dao.authenticate(this.tenDangNhap, this.matKhau);
+        if (tk != null) {
+            NhanVienDAO nvDao = new NhanVienDAO();
+            for (NhanVien nv : nvDao.getAll()) {
+                if (nv.getTaiKhoan() != null && tk.getMaTK().equals(nv.getTaiKhoan().getMaTK())) {
+                    return nv;
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean changePassword() {
+        if (maTK == null || matKhau == null) return false;
+        return new TaiKhoanDAO().changePassword(maTK, matKhau);
+    }
+
+    public boolean changePassword(String newPassword) {
+        if (maTK == null) return false;
+        boolean ok = new TaiKhoanDAO().changePassword(maTK, newPassword);
+        if (ok) {
+            this.matKhau = newPassword;
+        }
+        return ok;
     }
 
     public String getMaTK() {

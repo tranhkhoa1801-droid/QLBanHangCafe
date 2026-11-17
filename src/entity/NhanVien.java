@@ -1,6 +1,8 @@
 package entity;
 
+import java.util.List;
 import java.util.Objects;
+import dao.NhanVienDAO;
 
 public class NhanVien {
     public static final String QUANLY = "Quản Lý";
@@ -9,8 +11,8 @@ public class NhanVien {
     private String maNV;
     private String hoTen;
     private String vaiTro;
-    private String sDT;
-    private TaiKhoan taiKhoan;
+    private String sdt;
+    private TaiKhoan tk;
     private String caLamViec;
     private boolean isActive;
 
@@ -23,20 +25,46 @@ public class NhanVien {
         this.isActive = true;
     }
 
-    public NhanVien(String maNV, String hoTen, String vaiTro, String sDT, TaiKhoan taiKhoan, String caLamViec,
+    public NhanVien(String maNV, String hoTen, String vaiTro, String sdt, TaiKhoan tk, String caLamViec,
             boolean isActive) {
         this.maNV = maNV;
         this.hoTen = hoTen;
         this.vaiTro = vaiTro;
-        this.sDT = sDT;
-        this.taiKhoan = taiKhoan;
+        this.sdt = sdt;
+        this.tk = tk;
         this.caLamViec = caLamViec;
         this.isActive = isActive;
     }
 
-    public NhanVien(String maNV, String hoTen, String vaiTro, String sDT, String maTK, String caLamViec,
+    public NhanVien(String maNV, String hoTen, String vaiTro, String sdt, String maTK, String caLamViec,
             boolean isActive) {
-        this(maNV, hoTen, vaiTro, sDT, maTK != null ? new TaiKhoan(maTK) : null, caLamViec, isActive);
+        this(maNV, hoTen, vaiTro, sdt, maTK != null ? new TaiKhoan(maTK) : null, caLamViec, isActive);
+    }
+
+    // Class diagram methods
+    public List<NhanVien> getAll() {
+        return new NhanVienDAO().getAll();
+    }
+
+    public boolean save() {
+        NhanVienDAO dao = new NhanVienDAO();
+        if (dao.getById(maNV) != null) {
+            return dao.update(this);
+        } else {
+            return dao.insert(this);
+        }
+    }
+
+    public boolean delete() {
+        return new NhanVienDAO().delete(maNV);
+    }
+
+    public List<NhanVien> search() {
+        return new NhanVienDAO().search(hoTen != null ? hoTen : maNV);
+    }
+
+    public List<NhanVien> search(String tuKhoa) {
+        return new NhanVienDAO().search(tuKhoa);
     }
 
     public boolean isManager() {
@@ -68,36 +96,44 @@ public class NhanVien {
         this.vaiTro = vaiTro;
     }
 
-    public String getsDT() {
-        return sDT;
-    }
-
-    public void setsDT(String sDT) {
-        this.sDT = sDT;
-    }
-
     public String getSdt() {
-        return sDT;
+        return sdt;
     }
 
     public void setSdt(String sdt) {
-        this.sDT = sdt;
+        this.sdt = sdt;
+    }
+
+    public String getsDT() {
+        return sdt;
+    }
+
+    public void setsDT(String sDT) {
+        this.sdt = sDT;
+    }
+
+    public TaiKhoan getTk() {
+        return tk;
+    }
+
+    public void setTk(TaiKhoan tk) {
+        this.tk = tk;
     }
 
     public TaiKhoan getTaiKhoan() {
-        return taiKhoan;
+        return tk;
     }
 
     public void setTaiKhoan(TaiKhoan taiKhoan) {
-        this.taiKhoan = taiKhoan;
+        this.tk = taiKhoan;
     }
 
     public void setTaiKhoan(String maTK) {
-        this.taiKhoan = (maTK != null) ? new TaiKhoan(maTK) : null;
+        this.tk = (maTK != null) ? new TaiKhoan(maTK) : null;
     }
 
     public String getMaTK() {
-        return (taiKhoan != null) ? taiKhoan.getMaTK() : null;
+        return (tk != null) ? tk.getMaTK() : null;
     }
 
     public String getCaLamViec() {
@@ -114,39 +150,6 @@ public class NhanVien {
 
     public void setActive(boolean isActive) {
         this.isActive = isActive;
-    }
-
-    // Convenience accessors
-    public String maNV() {
-        return maNV;
-    }
-
-    public String hoTen() {
-        return hoTen;
-    }
-
-    public String vaiTro() {
-        return vaiTro;
-    }
-
-    public String sdt() {
-        return sDT;
-    }
-
-    public String diaChi() {
-        return "";
-    }
-
-    public String tenDangNhap() {
-        return taiKhoan != null ? taiKhoan.getTenDangNhap() : "";
-    }
-
-    public String matKhau() {
-        return taiKhoan != null ? taiKhoan.getMatKhau() : "";
-    }
-
-    public boolean hoatDong() {
-        return isActive;
     }
 
     @Override

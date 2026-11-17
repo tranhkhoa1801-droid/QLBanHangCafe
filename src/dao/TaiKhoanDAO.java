@@ -92,6 +92,16 @@ public class TaiKhoanDAO {
         return null;
     }
 
+    public boolean insert(Connection con, TaiKhoan tk) throws SQLException {
+        String sql = "INSERT INTO TaiKhoan (maTK, tenDangNhap, matKhau) VALUES (?, ?, ?)";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, tk.getMaTK());
+            ps.setString(2, tk.getTenDangNhap());
+            ps.setString(3, tk.getMatKhau());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public boolean insert(TaiKhoan tk) {
         String sql = "INSERT INTO TaiKhoan (maTK, tenDangNhap, matKhau) VALUES (?, ?, ?)";
         try (Connection con = ConnectDB.getConnection();
@@ -120,6 +130,15 @@ public class TaiKhoanDAO {
         }
     }
 
+    public boolean changePassword(Connection con, String maTK, String matKhauMoi) throws SQLException {
+        String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE maTK = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, matKhauMoi);
+            ps.setString(2, maTK);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public boolean changePassword(String maTK, String matKhauMoi) {
         String sql = "UPDATE TaiKhoan SET matKhau = ? WHERE maTK = ?";
         try (Connection con = ConnectDB.getConnection();
@@ -130,6 +149,14 @@ public class TaiKhoanDAO {
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public boolean delete(Connection con, String maTK) throws SQLException {
+        String sql = "DELETE FROM TaiKhoan WHERE maTK = ?";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, maTK);
+            return ps.executeUpdate() > 0;
         }
     }
 
