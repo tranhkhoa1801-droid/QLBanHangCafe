@@ -74,14 +74,14 @@ GO
 INSERT INTO TaiKhoan (maTK, tenDangNhap, matKhau) VALUES
 ('TK01', 'manager_ha', 'password123'),
 ('TK02', 'cashier_tung', 'password123'),
-('TK03', 'barista_nam', 'password123');
+('TK03', 'waiter_nam', 'password123')
 GO
 
 -- Thêm nhân viên mới
 INSERT INTO NhanVien (maNV, hoTen, vaiTro, sdt, maTK, caLamViec, isActive) VALUES
 ('NV01', N'Nguyễn Thanh Hà', N'Quản Lý', '0988112233', 'TK01', N'Ca sáng (6:00 - 14:00)', 1),
-('NV02', N'Trần Thanh Tùng', N'Thu Ngân', '0977445566', 'TK02', N'Ca chiều (14:00 - 22:00)', 1),
-('NV03', N'Phạm Hoài Nam', N'Pha Chế', '0966778899', 'TK03', N'Ca toàn thời gian', 1);
+('NV02', N'Trần Thanh Tùng', N'Thu Ngân', '0977445566', 'TK02', N'Ca chiều (14:00 - 19:00)', 1),
+('NV03', N'Nguyễn Văn Nam', N'Nhân Viên', '0976889955', 'TK03', N'Ca tối (19:00 - 23:00)', 1)
 GO
 
 -- Thêm danh mục mới (Trà sữa, Sinh tố & Nước ép, Đồ ăn vặt)
